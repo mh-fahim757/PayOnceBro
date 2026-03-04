@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import {
+  createRestaurant,
   getOrders,
   updateOrderStatus,
   getMenu,
@@ -14,6 +15,9 @@ import { protect } from '../middleware/authMiddleware.js'
 import { restrictTo } from '../middleware/roleMiddleware.js'
 
 const router = Router()
+
+// Onboarding — create restaurant for a new owner
+router.post('/', protect, restrictTo('restaurant_owner'), createRestaurant)
 
 // Orders
 router.get('/orders', protect, restrictTo('restaurant_owner'), getOrders)

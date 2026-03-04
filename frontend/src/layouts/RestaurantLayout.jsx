@@ -1,4 +1,4 @@
-import { NavLink, Outlet } from 'react-router-dom'
+import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { UrlState } from '../context/AuthContext'
 
 const navLinks = [
@@ -9,6 +9,7 @@ const navLinks = [
 
 const RestaurantLayout = () => {
   const { user, logout } = UrlState()
+  const navigate = useNavigate()
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -41,7 +42,10 @@ const RestaurantLayout = () => {
 
         <div className="px-3 py-4 border-t border-gray-200">
           <button
-            onClick={logout}
+            onClick={async () => {
+              try { await logout() } catch { /* best-effort */ }
+              navigate('/auth')
+            }}
             className="w-full text-left px-3 py-2 rounded-md text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
           >
             Logout

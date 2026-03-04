@@ -1,5 +1,16 @@
 import supabase from '../config/db.js'
 
+// Creates a new restaurant for the given owner
+export const createRestaurant = async (ownerId, fields) => {
+  const { data, error } = await supabase
+    .from('restaurants')
+    .insert({ ...fields, owner_id: ownerId })
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
 // Returns the restaurant owned by this auth user
 export const getByOwner = async (ownerId) => {
   const { data, error } = await supabase

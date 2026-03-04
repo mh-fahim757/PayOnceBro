@@ -102,11 +102,11 @@ import { useNavigate } from 'react-router-dom'
 import { UrlState } from './context/AuthContext'
 
 const SmartRedirect = () => {
-  const { user, loading } = UrlState()
+  const { user, loading, isSessionLoaded } = UrlState()
   const navigate = useNavigate()
 
   useEffect(() => {
-    if (loading) return
+    if (loading || !isSessionLoaded) return
     if (!user) {
       navigate('/auth')
       return
@@ -116,7 +116,7 @@ const SmartRedirect = () => {
     else if (role === 'rider') navigate('/rider/dashboard', { replace: true })
     else if (role === 'admin') navigate('/admin/analytics', { replace: true })
     else navigate('/home', { replace: true }) // default: customer
-  }, [user, loading, navigate])
+  }, [user, loading, isSessionLoaded, navigate])
 
   return null
 }

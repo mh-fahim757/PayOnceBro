@@ -21,13 +21,16 @@ export const register = async (req, res, next) => {
 
     // Trigger already created the profile row — update it with name fields
     if (data.user) {
+      // upsert handles the case where the DB trigger hasn't created the row yet
       const { error: profileError } = await supabase
         .from('profiles')
-        .update({ username, full_name })
-        .eq('id', data.user.id)
+        .upsert(
+          { id: data.user.id, username, full_name, role },
+          { onConflict: 'id' }
+        )
 
       if (profileError) {
-        console.error('Profile update error:', profileError.message)
+        console.error('Profile upsert error:', profileError.message)
       }
     }
 
@@ -88,17 +91,18 @@ export const getMe = async (req, res, next) => {
       .eq('id', req.user.id)
       .single()
 
-    if (error) throw error
+    // PGRST116 = no rows found — profile row missing, not a server error
+    if (error && error.code !== 'PGRST116') throw error
 
     res.json({
       user: {
         id: req.user.id,
         email: req.user.email,
         aud: 'authenticated',
-        role: profile.role,
-        username: profile.username,
-        full_name: profile.full_name,
-        created_at: profile.created_at,
+        role: profile?.role ?? req.user.role ?? 'user',
+        username: profile?.username ?? null,
+        full_name: profile?.full_name ?? null,
+        created_at: profile?.created_at ?? null,
       },
     })
   } catch (err) {

@@ -14,7 +14,8 @@
     "build": "npm run build -w frontend"
   },
   "devDependencies": {
-    "concurrently": "^9.1.2"
+    "concurrently": "^9.1.2",
+    "shadcn": "^3.8.5"
   },
   "version": "1.0.0",
   "main": "index.js",

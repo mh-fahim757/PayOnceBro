@@ -37,6 +37,17 @@ const ItemForm = ({ initial = EMPTY_FORM, onSave, onCancel, saving }) => {
   const handleImagePick = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
+
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+    if (!allowedTypes.includes(file.type)) {
+      setUploadError('Only JPG, PNG, WEBP or GIF images are allowed.')
+      return
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setUploadError('Image must be 5 MB or less.')
+      return
+    }
+
     setUploading(true)
     setUploadError(null)
     try {
@@ -448,8 +459,10 @@ const MenuManagement = () => {
     try {
       const updated = await updateMenuItem(item.id, { is_available: !item.is_available })
       setItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)))
-    } catch {
-      // silently ignore; could add toast
+    } catch (err) {
+      setFormError(
+        err?.response?.data?.message || err?.message || 'Failed to update item availability.'
+      )
     } finally {
       setBusyId(null)
     }
@@ -463,8 +476,10 @@ const MenuManagement = () => {
     try {
       await deleteMenuItem(deleteTarget.id)
       setItems((prev) => prev.filter((i) => i.id !== deleteTarget.id))
-    } catch {
-      // silently ignore; could add toast
+    } catch (err) {
+      setFormError(
+        err?.response?.data?.message || err?.message || 'Failed to delete item.'
+      )
     } finally {
       setBusyId(null)
     }

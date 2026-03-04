@@ -1,5 +1,12 @@
 import api from './api'
 
+// ─── Onboarding ───────────────────────────────────────────────────────────────
+
+export const createRestaurant = async (fields) => {
+  const { data } = await api.post('/restaurants', fields)
+  return data.restaurant
+}
+
 export const getRestaurantOrders = async () => {
   const { data } = await api.get('/restaurants/orders')
   return data

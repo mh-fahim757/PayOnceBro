@@ -1,5 +1,32 @@
 import * as restaurantModel from '../models/restaurantModel.js'
 
+/**
+ * POST /api/restaurants
+ * Creates the restaurant profile for a new restaurant_owner.
+ * Returns 409 if the owner already has a restaurant.
+ */
+export const createRestaurant = async (req, res, next) => {
+  try {
+    const existing = await restaurantModel.getByOwner(req.user.id)
+    if (existing) {
+      return res.status(409).json({ message: 'You already have a restaurant registered.' })
+    }
+
+    const { name, address, cuisine, phone } = req.body
+    if (!name) return res.status(400).json({ message: 'name is required' })
+
+    const restaurant = await restaurantModel.createRestaurant(req.user.id, {
+      name,
+      address: address ?? null,
+      cuisine: cuisine ?? null,
+      phone:   phone   ?? null,
+    })
+    res.status(201).json({ restaurant })
+  } catch (err) {
+    next(err)
+  }
+}
+
 // Restaurant role: which status transitions are allowed
 const ALLOWED_TRANSITIONS = {
   pending:  ['accepted', 'cancelled'],
@@ -153,6 +180,9 @@ export const addMenuItem = async (req, res, next) => {
     const { name, category, price, description, image_url } = req.body
     if (!name || price == null) {
       return res.status(400).json({ message: 'name and price are required' })
+    }
+    if (Number(price) < 0) {
+      return res.status(400).json({ message: 'price must be 0 or greater' })
     }
 
     const item = await restaurantModel.createMenuItem(restaurant.id, {

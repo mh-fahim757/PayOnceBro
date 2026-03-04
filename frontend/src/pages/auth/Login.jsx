@@ -15,10 +15,8 @@ import * as Yup from 'yup'
 import useFetch from '../../hooks/useFetch'
 import { login } from '../../services/authService'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { UrlState } from '../../context/AuthContext'
-
 const Login = () => {
-    const [errors, seterrros] = useState([])
+    const [errors, setErrors] = useState({})
     const [formdata, setformdata] = useState({
         email: "",
         password: ""
@@ -37,17 +35,15 @@ const Login = () => {
     }
 
     const {data, error, loading, fn:fnlogin} = useFetch(login, formdata)
-    const {fetchuser} = UrlState()
 
     useEffect(() => {
         if (data && !error) {
             navigate(`/dashboard?${longlink ? `createNew=${longlink}` : ""}`)
-            fetchuser()
         }
     }, [data, error])
 
     const handleLogin = async () => {
-        seterrros([])
+        setErrors({})
         try {
             const schema = Yup.object().shape({
                 email: Yup.string().email("Invalid email").required("Email is required"),
@@ -61,7 +57,7 @@ const Login = () => {
             e?.inner?.forEach(element => {
                 newerrors[element.path] = element.message
             })
-            seterrros(newerrors)
+            setErrors(newerrors)
         }
     }
 
@@ -74,11 +70,11 @@ const Login = () => {
         </CardHeader>
         <CardContent className="space-y-2">
             <div className="space-y-1">
-                <Input name="email" type="email" placeholder="Enter Email" onChange={handleInputChange}/>
+                <Input name="email" type="email" placeholder="Enter Email" onChange={handleInputChange} value={formdata.email}/>
                 {errors.email && <Error message={errors.email}/>}
             </div>
              <div className="space-y-1">
-                <Input name="password" type="password" placeholder="Enter Password" onChange={handleInputChange}/>
+                <Input name="password" type="password" placeholder="Enter Password" onChange={handleInputChange} value={formdata.password}/>
                 {errors.password && <Error message={errors.password}/>}
             </div>
         </CardContent>

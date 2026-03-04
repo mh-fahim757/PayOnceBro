@@ -1,4 +1,4 @@
-import { NavLink, Outlet } from 'react-router-dom'
+import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { UrlState } from '../context/AuthContext'
 
 /**
@@ -20,6 +20,7 @@ const navLinks = [
 
 const UserLayout = () => {
   const { user, logout } = UrlState()
+  const navigate = useNavigate()
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -56,7 +57,10 @@ const UserLayout = () => {
               {user?.full_name ?? user?.email ?? 'User'}
             </span>
             <button
-              onClick={logout}
+              onClick={async () => {
+                try { await logout() } catch { /* best-effort; local session cleared by supabase.signOut */ }
+                navigate('/auth')
+              }}
               className="text-xs px-2.5 py-1.5 rounded-lg text-red-600 hover:bg-red-50 font-medium transition-colors"
             >
               Logout

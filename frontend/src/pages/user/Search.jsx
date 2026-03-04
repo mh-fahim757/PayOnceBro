@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import SearchBar from '../../components/user/SearchBar'
 import FoodCard from '../../components/user/FoodCard'
+import { searchFood, getCategories as fetchApiCategories } from '../../services/searchService'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 🍔 DUMMY DATA — fake restaurants + food items for demo purposes
@@ -135,18 +136,44 @@ const Search = () => {
   const [userLocation, setUserLocation] = useState(null)
   const [cart, setCart]             = useState([])
   const [cartNotif, setCartNotif]   = useState(null)
+  const [searchLoading, setSearchLoading] = useState(false)
+  const [categories, setCategories]       = useState(ALL_CATEGORIES) // fallback until API responds
+  const [isDemoMode, setIsDemoMode]       = useState(false)
 
-  // Show all items on first load
-  useEffect(() => { setResults(searchLocally('', {}, null)) }, [])
+  // Load categories from the real API; silently fall back to the static hardcoded list
+  useEffect(() => {
+    fetchApiCategories()
+      .then((cats) => { if (cats?.length) setCategories(cats) })
+      .catch(() => {})
+  }, [])
 
-  const handleSearch = useCallback((query, filters) => {
+  // Initial load — try real API, fall back to local dummy data
+  useEffect(() => {
+    setSearchLoading(true)
+    searchFood('', {})
+      .then(({ results: apiResults }) => { setResults(apiResults); setIsDemoMode(false) })
+      .catch(() => { setResults(searchLocally('', {}, null)); setIsDemoMode(true) })
+      .finally(() => setSearchLoading(false))
+  }, [])
+
+  const handleSearch = useCallback(async (query, filters) => {
     setLastQuery(query)
     setHasSearched(true)
+    setSearchLoading(true)
     const loc = filters.userLat && filters.userLng
       ? { lat: Number(filters.userLat), lng: Number(filters.userLng) }
       : userLocation
     if (filters.userLat && filters.userLng) setUserLocation(loc)
-    setResults(searchLocally(query, filters, loc))
+    try {
+      const { results: apiResults } = await searchFood(query, filters)
+      setResults(apiResults)
+      setIsDemoMode(false)
+    } catch {
+      setResults(searchLocally(query, filters, loc))
+      setIsDemoMode(true)
+    } finally {
+      setSearchLoading(false)
+    }
   }, [userLocation])
 
   const handleAddToCart = (item) => {
@@ -178,7 +205,7 @@ const Search = () => {
       {/* Sticky search header */}
       <div className="sticky top-0 z-10 bg-white border-b border-gray-200 shadow-sm px-4 sm:px-6 py-4">
         <div className="max-w-5xl mx-auto">
-          <SearchBar onSearch={handleSearch} categories={ALL_CATEGORIES} loading={false} />
+          <SearchBar onSearch={handleSearch} categories={categories} loading={searchLoading} />
         </div>
       </div>
 
@@ -199,7 +226,7 @@ const Search = () => {
             </h1>
             <p className="text-sm text-gray-500 mt-0.5">
               {results.length} item{results.length !== 1 ? 's' : ''} across {groups.length} restaurant{groups.length !== 1 ? 's' : ''}
-              {' '}<span className="text-xs text-orange-400 italic font-medium">· demo mode</span>
+              {isDemoMode && <span className="text-xs text-orange-400 italic font-medium"> · demo mode</span>}
             </p>
           </div>
 
