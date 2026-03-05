@@ -23,7 +23,7 @@ export const register = async (req, res, next) => {
     if (data.user) {
       const { error: profileError } = await supabase
         .from('profiles')
-        .update({ username, full_name })
+        .update({ username, full_name, role })
         .eq('id', data.user.id)
 
       if (profileError) {
@@ -95,13 +95,15 @@ export const getMe = async (req, res, next) => {
         id: req.user.id,
         email: req.user.email,
         aud: 'authenticated',
-        role: profile.role,
+        // Prefer the role from the JWT which was set correctly at signup
+        role: req.user.role && req.user.role !== 'user' ? req.user.role : profile.role,
         username: profile.username,
         full_name: profile.full_name,
         created_at: profile.created_at,
       },
     })
   } catch (err) {
+    console.error('getMe error:', err);
     next(err)
   }
 }
