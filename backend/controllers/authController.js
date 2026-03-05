@@ -15,8 +15,8 @@ export const register = async (req, res, next) => {
     })
 
     if (error) {
-      const status = error.status || 400
-      return res.status(status).json({ message: error.message })
+      const status = error.status || 400;
+      return res.status(status).json({ message: error.message });
     }
 
     // Trigger already created the profile row — update it with name fields
@@ -24,20 +24,12 @@ export const register = async (req, res, next) => {
       // upsert handles the case where the DB trigger hasn't created the row yet
       const { error: profileError } = await supabase
         .from('profiles')
-<<<<<<< HEAD
         .upsert(
           { id: data.user.id, username, full_name, role },
           { onConflict: 'id' }
-        )
-=======
-        .upsert(
-          { id: data.user.id, username, full_name, role },
-          { onConflict: 'id' }
-        )
->>>>>>> e37108f92aaaeaedcefaabe81782e553b8022a50
-
+        );
       if (profileError) {
-        console.error('Profile upsert error:', profileError.message)
+        console.error('Profile upsert error:', profileError.message);
       }
     }
 
@@ -67,9 +59,21 @@ export const login = async (req, res, next) => {
       return res.status(401).json({ message: error.message })
     }
 
+    // Fetch the profile so we can include the definitive role in the response
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role, username, full_name')
+      .eq('id', data.user.id)
+      .single()
+
     res.json({
       session: data.session,
-      user: data.user,
+      user: {
+        ...data.user,
+        role: profile?.role ?? data.user.user_metadata?.role ?? 'user',
+        username: profile?.username ?? null,
+        full_name: profile?.full_name ?? null,
+      },
     })
   } catch (err) {
     next(err)
@@ -105,18 +109,10 @@ export const getMe = async (req, res, next) => {
       user: {
         id: req.user.id,
         email: req.user.email,
-        aud: 'authenticated',
-<<<<<<< HEAD
         role: profile?.role ?? req.user.role ?? 'user',
         username: profile?.username ?? null,
         full_name: profile?.full_name ?? null,
         created_at: profile?.created_at ?? null,
-=======
-        role: profile?.role ?? req.user.role ?? 'user',
-        username: profile?.username ?? null,
-        full_name: profile?.full_name ?? null,
-        created_at: profile?.created_at ?? null,
->>>>>>> e37108f92aaaeaedcefaabe81782e553b8022a50
       },
     })
   } catch (err) {

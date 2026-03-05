@@ -43,19 +43,18 @@ const Register = () => {
 
     useEffect(() => {
         if (data && !error) {
-<<<<<<< HEAD
             if (data.requiresEmailConfirmation) {
                 // Email confirmation required — stay on the page; the UI renders a notice below
                 return
             }
-            navigate(`/dashboard?${longlink ? `createNew=${longlink}` : ""}`)
-=======
-            if (data.requiresEmailConfirmation) {
-                // Email confirmation required — stay on the page; the UI renders a notice below
-                return
-            }
-            navigate(`/dashboard?${longlink ? `createNew=${longlink}` : ""}`)
->>>>>>> e37108f92aaaeaedcefaabe81782e553b8022a50
+            // Navigate based on selected role
+            const role = formData.role
+            let destination = '/home'
+            if (role === 'restaurant_owner' || role === 'restaurant') destination = '/restaurant/dashboard'
+            else if (role === 'rider') destination = '/rider/dashboard'
+            else if (role === 'admin') destination = '/admin/analytics'
+
+            navigate(`${destination}${longlink ? `?createNew=${longlink}` : ""}`, { replace: true })
         }
     }, [data, error])
 

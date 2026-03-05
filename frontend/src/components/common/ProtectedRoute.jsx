@@ -5,8 +5,9 @@ import { BeatLoader } from 'react-spinners';
 const ProtectedRoute = ({ role }) => {
   const { user, isAuthenticated, loading, isSessionLoaded } = UrlState();
 
-  // Wait until the Supabase session has been checked before making a redirect decision
-  if (loading || !isSessionLoaded) {
+  // Wait until the Supabase session has been checked AND the user fetch has settled
+  const stillLoading = loading || !isSessionLoaded;
+  if (stillLoading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', marginTop: '4rem' }}>
         <BeatLoader color="#1e293b" />
@@ -14,14 +15,17 @@ const ProtectedRoute = ({ role }) => {
     );
   }
 
-  // Not logged in at all → send to auth
+  // Not logged in → send to auth
   if (!isAuthenticated) {
     return <Navigate to="/auth" replace />;
   }
 
   // Wrong role → send to auth
-  if (role && user?.role !== role) {
-    console.log('ProtectedRoute debugging: Expected role:', role, 'but got user:', user);
+  const userRole = user?.role?.trim().toLowerCase();
+  const requiredRole = role?.trim().toLowerCase();
+
+  if (requiredRole && userRole !== requiredRole) {
+    console.warn('ProtectedRoute: Expected role:', requiredRole, 'but got:', userRole);
     return <Navigate to="/auth" replace />;
   }
 

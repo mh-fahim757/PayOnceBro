@@ -1,12 +1,13 @@
 import { Outlet, Link, useNavigate } from 'react-router-dom';
+import { UrlState } from '../context/AuthContext';
 
 const RiderLayout = () => {
   const navigate = useNavigate();
+  const { logout } = UrlState();
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user'); // Also clearing user role for safety
-    navigate('/login');
+  const handleLogout = async () => {
+    await logout();
+    navigate('/auth');
   };
 
   return (
@@ -22,12 +23,11 @@ const RiderLayout = () => {
           <li style={{ marginBottom: '15px' }}>
             <Link to="/rider/route" style={{ color: 'white', textDecoration: 'none' }}>🗺️ Route View</Link>
           </li>
-          {/* New Earnings Link Added Here */}
           <li style={{ marginBottom: '15px' }}>
             <Link to="/rider/earnings" style={{ color: 'white', textDecoration: 'none' }}>💰 Earnings</Link>
           </li>
         </ul>
-        <button 
+        <button
           onClick={handleLogout}
           style={{ marginTop: '50px', width: '100%', padding: '10px', background: '#ef4444', border: 'none', color: 'white', cursor: 'pointer', borderRadius: '4px' }}
         >
@@ -40,7 +40,7 @@ const RiderLayout = () => {
         <header style={{ marginBottom: '20px', paddingBottom: '10px', borderBottom: '1px solid #e2e8f0' }}>
           <strong>Rider Status:</strong> <span style={{ color: 'green' }}>● Online</span>
         </header>
-        <Outlet /> {/* This is where Dashboard, RouteView, or Earnings will appear */}
+        <Outlet />
       </main>
     </div>
   );
