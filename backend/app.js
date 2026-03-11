@@ -1,3 +1,5 @@
+// backend/app.js
+
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -6,8 +8,10 @@ import { errorHandler } from './middleware/errorMiddleware.js';
 import authRoutes from './routes/authRoutes.js';
 import restaurantRoutes from './routes/restaurantRoutes.js';
 import searchRoutes from './routes/searchRoutes.js';
+import clusterRoutes from './routes/clusterRoutes.js';   // ← ADD THIS
 
 const app = express();
+
 app.use(cors({
   origin: (origin, callback) => {
     const allowed = process.env.FRONTEND_URL;
@@ -19,12 +23,18 @@ app.use(cors({
   },
   credentials: true,
 }));
+
 app.use(helmet());
 app.use(morgan('dev'));
 app.use(express.json());
-app.use('/api/auth', authRoutes);
+
+app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
+
+app.use('/api/auth',        authRoutes);
 app.use('/api/restaurants', restaurantRoutes);
-app.use('/api/search', searchRoutes);
+app.use('/api/search',      searchRoutes);
+app.use('/api/cluster',     clusterRoutes);   // ← ADD THIS
+
 app.use(errorHandler);
 
 export default app;
