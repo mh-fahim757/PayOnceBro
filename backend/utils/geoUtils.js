@@ -1,33 +1,24 @@
-// backend/utils/geoUtils.js
-// ─────────────────────────────────────────────────────────────────────────────
-// Pure math helpers — no DB calls, no API calls, just calculations.
-// ─────────────────────────────────────────────────────────────────────────────
-
 /**
- * haversineDistance
+ * Haversine distance formula — calculates the straight-line distance
+ * between two GPS coordinates on the surface of the Earth.
  *
- * Calculates the straight-line distance between two GPS points on Earth.
- * Think of it like drawing a line on a globe between two pins.
+ * Think of the Earth as a sphere. Two restaurants are dots on that sphere.
+ * This formula tells us exactly how many kilometres apart those dots are.
  *
- * @param {number} lat1  - latitude of point A  (e.g. 23.8103)
- * @param {number} lng1  - longitude of point A (e.g. 90.4125)
- * @param {number} lat2  - latitude of point B
- * @param {number} lng2  - longitude of point B
- * @returns {number} distance in kilometres
+ * @param {number} lat1 - Latitude of point 1 (e.g. restaurant)
+ * @param {number} lng1 - Longitude of point 1
+ * @param {number} lat2 - Latitude of point 2 (e.g. user)
+ * @param {number} lng2 - Longitude of point 2
+ * @returns {number} Distance in kilometres
  */
 export const haversineDistance = (lat1, lng1, lat2, lng2) => {
   const R = 6371 // Earth's radius in km
-
-  // Convert degree difference to radians
   const dLat = ((lat2 - lat1) * Math.PI) / 180
   const dLng = ((lng2 - lng1) * Math.PI) / 180
-
-  // Haversine formula
   const a =
     Math.sin(dLat / 2) ** 2 +
     Math.cos((lat1 * Math.PI) / 180) *
-    Math.cos((lat2 * Math.PI) / 180) *
-    Math.sin(dLng / 2) ** 2
-
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLng / 2) ** 2
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
 }
