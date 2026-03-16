@@ -29,9 +29,6 @@ app.use(helmet());
 app.use(morgan('dev'));
 app.use(express.json());
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
-
-app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
-
 app.use('/api/auth',        authRoutes);
 app.use('/api/restaurants', restaurantRoutes);
 app.use('/api/search',      searchRoutes);
