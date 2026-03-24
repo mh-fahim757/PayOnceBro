@@ -47,10 +47,22 @@ export const updateRestaurantSettings = async (settings) => {
 
 export const getProfile = async () => {
   const { data } = await api.get('/restaurants/profile')
-  return data.profile // { name, address, cuisine, phone }
+  return data.profile
 }
 
 export const updateProfile = async (fields) => {
   const { data } = await api.put('/restaurants/profile', fields)
   return data.profile
+}
+
+// ─── Reviews / ratings (Member C) ───────────────────────────────────────────
+
+export const getRestaurantReviews = async () => {
+  const { data } = await api.get('/restaurants/reviews')
+  return data
+}
+
+export const addRestaurantReviewResponse = async (ratingId, responseText) => {
+  const { data } = await api.post(`/restaurants/reviews/${ratingId}/response`, { responseText })
+  return data.review
 }
