@@ -11,6 +11,11 @@ import {
   getProfile,
   updateProfile,
 } from '../controllers/restaurantController.js'
+import {
+  createRestaurantRating,
+  getRestaurantReviews,
+  addRestaurantReviewResponse,
+} from '../controllers/ratingController.js'
 import { protect } from '../middleware/authMiddleware.js'
 import { restrictTo } from '../middleware/roleMiddleware.js'
 
@@ -35,5 +40,10 @@ router.put('/settings', protect, restrictTo('restaurant_owner'), updateSettings)
 // Public profile
 router.get('/profile', protect, restrictTo('restaurant_owner'), getProfile)
 router.put('/profile', protect, restrictTo('restaurant_owner'), updateProfile)
+
+// Reviews / ratings (Member C)
+router.post('/reviews', protect, restrictTo('user'), createRestaurantRating)
+router.get('/reviews', protect, restrictTo('restaurant_owner'), getRestaurantReviews)
+router.post('/reviews/:ratingId/response', protect, restrictTo('restaurant_owner'), addRestaurantReviewResponse)
 
 export default router

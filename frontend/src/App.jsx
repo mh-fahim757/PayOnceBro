@@ -9,6 +9,7 @@ import Auth from './pages/auth/Auth';
 import RestaurantLayout from './layouts/RestaurantLayout';
 import RestaurantDashboard from './pages/restaurant/Dashboard';
 import MenuManagement from './pages/restaurant/MenuManagement';
+import RestaurantReviews from './pages/restaurant/Reviews';
 
 // User pages (Member A)
 import UserLayout from './layouts/UserLayout';
@@ -58,7 +59,7 @@ function App() {
               <Route index element={<Navigate to="dashboard" replace />} />
               <Route path="dashboard" element={<RestaurantDashboard />} />
               <Route path="menu" element={<MenuManagement />} />
-              <Route path="reviews" element={<div className="p-10 text-center text-xl text-gray-500 mt-20">⭐ Reviews page is under construction (Member C)</div>} />
+              <Route path="reviews" element={<RestaurantReviews />} />
             </Route>
           </Route>
 

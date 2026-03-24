@@ -16,7 +16,7 @@ const RestaurantLayout = () => {
       {/* Sidebar */}
       <aside className="w-56 bg-white border-r border-gray-200 flex flex-col">
         <div className="px-6 py-5 border-b border-gray-200">
-          <h1 className="text-lg font-bold text-gray-800">PayOnceBro</h1>
+          <h1 className="text-lg font-bold text-gray-800">PayOnceBro 🛵</h1>
           <p className="text-xs text-gray-500 mt-1 truncate">
             {user?.email ?? 'Restaurant'}
           </p>

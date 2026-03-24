@@ -1,5 +1,13 @@
 import * as restaurantModel from '../models/restaurantModel.js'
 
+const getDefaultRestaurantName = (email) => {
+  const fallback = 'My Restaurant'
+  if (!email) return fallback
+  const local = email.split('@')[0]?.trim()
+  if (!local) return fallback
+  return `${local} Restaurant`
+}
+
 /**
  * POST /api/restaurants
  * Creates the restaurant profile for a new restaurant_owner.
@@ -244,14 +252,28 @@ export const removeMenuItem = async (req, res, next) => {
  */
 export const getProfile = async (req, res, next) => {
   try {
-    const restaurant = await restaurantModel.getByOwner(req.user.id)
-    if (!restaurant) return res.status(404).json({ message: 'No restaurant found for this account' })
+    let restaurant = await restaurantModel.getByOwner(req.user.id)
+    if (!restaurant) {
+      restaurant = await restaurantModel.createRestaurant(req.user.id, {
+        name: getDefaultRestaurantName(req.user?.email),
+      })
+    }
     res.json({
       profile: {
-        name:    restaurant.name    ?? '',
+        id: restaurant.id,
+        owner_id: restaurant.owner_id,
+        name: restaurant.name ?? '',
         address: restaurant.address ?? '',
+        lat: restaurant.lat,
+        lng: restaurant.lng,
+        avg_prep_time: restaurant.avg_prep_time,
+        max_capacity_per_hour: restaurant.max_capacity_per_hour,
+        is_active: restaurant.is_active,
+        avg_rating: restaurant.avg_rating,
+        created_at: restaurant.created_at,
         cuisine: restaurant.cuisine ?? '',
-        phone:   restaurant.phone   ?? '',
+        prep_time_minutes: restaurant.prep_time_minutes,
+        phone: restaurant.phone ?? '',
       },
     })
   } catch (err) {
@@ -265,26 +287,81 @@ export const getProfile = async (req, res, next) => {
  */
 export const updateProfile = async (req, res, next) => {
   try {
-    const restaurant = await restaurantModel.getByOwner(req.user.id)
-    if (!restaurant) return res.status(404).json({ message: 'No restaurant found for this account' })
+    let restaurant = await restaurantModel.getByOwner(req.user.id)
 
-    const ALLOWED = ['name', 'address', 'cuisine', 'phone']
+    const ALLOWED = [
+      'name',
+      'address',
+      'lat',
+      'lng',
+      'avg_prep_time',
+      'max_capacity_per_hour',
+      'is_active',
+      'cuisine',
+      'prep_time_minutes',
+      'phone',
+    ]
     const fields = {}
     ALLOWED.forEach((k) => {
       if (req.body[k] !== undefined) fields[k] = req.body[k]
     })
 
+    if (fields.lat != null) fields.lat = Number(fields.lat)
+    if (fields.lng != null) fields.lng = Number(fields.lng)
+    if (fields.avg_prep_time != null) fields.avg_prep_time = Number(fields.avg_prep_time)
+    if (fields.max_capacity_per_hour != null) fields.max_capacity_per_hour = Number(fields.max_capacity_per_hour)
+    if (fields.prep_time_minutes != null) fields.prep_time_minutes = Number(fields.prep_time_minutes)
+    if (fields.is_active != null) {
+      if (typeof fields.is_active === 'string') {
+        fields.is_active = fields.is_active.toLowerCase() === 'true'
+      } else {
+        fields.is_active = !!fields.is_active
+      }
+    }
+
+    if (fields.lat != null && Number.isNaN(fields.lat)) return res.status(400).json({ message: 'lat must be a valid number' })
+    if (fields.lng != null && Number.isNaN(fields.lng)) return res.status(400).json({ message: 'lng must be a valid number' })
+    if (fields.avg_prep_time != null && Number.isNaN(fields.avg_prep_time)) return res.status(400).json({ message: 'avg_prep_time must be a valid number' })
+    if (fields.max_capacity_per_hour != null && Number.isNaN(fields.max_capacity_per_hour)) return res.status(400).json({ message: 'max_capacity_per_hour must be a valid number' })
+    if (fields.prep_time_minutes != null && Number.isNaN(fields.prep_time_minutes)) return res.status(400).json({ message: 'prep_time_minutes must be a valid number' })
+
     if (Object.keys(fields).length === 0) {
       return res.status(400).json({ message: 'No valid fields provided' })
+    }
+
+    if (!restaurant) {
+      const seed = {
+        name: fields.name || getDefaultRestaurantName(req.user?.email),
+        address: fields.address ?? null,
+        cuisine: fields.cuisine ?? null,
+        phone: fields.phone ?? null,
+        lat: fields.lat ?? null,
+        lng: fields.lng ?? null,
+        avg_prep_time: fields.avg_prep_time ?? null,
+        max_capacity_per_hour: fields.max_capacity_per_hour ?? null,
+        prep_time_minutes: fields.prep_time_minutes ?? null,
+        is_active: fields.is_active ?? true,
+      }
+      restaurant = await restaurantModel.createRestaurant(req.user.id, seed)
     }
 
     const updated = await restaurantModel.updateRestaurantProfile(restaurant.id, fields)
     res.json({
       profile: {
-        name:    updated.name    ?? '',
+        id: updated.id,
+        owner_id: updated.owner_id,
+        name: updated.name ?? '',
         address: updated.address ?? '',
+        lat: updated.lat,
+        lng: updated.lng,
+        avg_prep_time: updated.avg_prep_time,
+        max_capacity_per_hour: updated.max_capacity_per_hour,
+        is_active: updated.is_active,
+        avg_rating: updated.avg_rating,
+        created_at: updated.created_at,
         cuisine: updated.cuisine ?? '',
-        phone:   updated.phone   ?? '',
+        prep_time_minutes: updated.prep_time_minutes,
+        phone: updated.phone ?? '',
       },
     })
   } catch (err) {

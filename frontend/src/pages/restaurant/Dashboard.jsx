@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import useRestaurantOrders from '../../hooks/useRestaurantOrders'
 import OrderCard from '../../components/restaurant/OrderCard'
-import { getProfile } from '../../services/restaurantService'
+import LocationPickerMap from '../../components/user/LocationPickerMap'
+import { getProfile, updateProfile } from '../../services/restaurantService'
 
 const TABS = [
   { key: 'pending',   label: 'New Orders' },
@@ -17,14 +18,37 @@ const EmptyState = ({ message }) => (
   </div>
 )
 
+const EMPTY_PROFILE = {
+  name: '',
+  address: '',
+  lat: '',
+  lng: '',
+  avg_prep_time: '',
+  max_capacity_per_hour: '',
+  is_active: true,
+  cuisine: '',
+  phone: '',
+}
+
+const toInputValue = (value) => (value ?? '')
+const toNullableNumber = (value) => (value === '' ? null : Number(value))
+
+const removeNil = (obj) => Object.fromEntries(
+  Object.entries(obj).filter(([, v]) => v !== undefined && v !== null)
+)
+
 // ─── Restaurant Info Tab ──────────────────────────────────────────────────────
 
 const RestaurantInfo = () => {
-  const [info, setInfo] = useState({ name: '', address: '' })
+  const [info, setInfo] = useState({ name: '', address: '', cuisine: '' })
 
   useEffect(() => {
     getProfile()
-      .then((p) => setInfo({ name: p.name || '', address: p.address || '' }))
+      .then((p) => setInfo({
+        name: p.name || '',
+        address: p.address || '',
+        cuisine: p.cuisine || '',
+      }))
       .catch(() => {})
   }, [])
 
@@ -36,7 +60,258 @@ const RestaurantInfo = () => {
       {info.address && (
         <span className="text-xs text-gray-400">{info.address}</span>
       )}
+      {info.cuisine && (
+        <span className="text-xs rounded-full bg-orange-100 text-orange-700 px-2 py-0.5">
+          {info.cuisine}
+        </span>
+      )}
     </div>
+  )
+}
+
+const RestaurantDetailsPanel = () => {
+  const [form, setForm] = useState(EMPTY_PROFILE)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+  const [saved, setSaved] = useState(false)
+  const [showMapPicker, setShowMapPicker] = useState(false)
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true)
+      setError('')
+      try {
+        const profile = await getProfile()
+        setForm({
+          name: profile.name ?? '',
+          address: profile.address ?? '',
+          lat: toInputValue(profile.lat),
+          lng: toInputValue(profile.lng),
+          avg_prep_time: toInputValue(profile.avg_prep_time),
+          max_capacity_per_hour: toInputValue(profile.max_capacity_per_hour),
+          is_active: profile.is_active ?? true,
+          cuisine: profile.cuisine ?? '',
+          phone: profile.phone ?? '',
+        })
+      } catch (err) {
+        setError(err?.response?.data?.message || err?.message || 'Failed to load restaurant details.')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    load()
+  }, [])
+
+  const updateField = (key) => (e) => {
+    const value = e?.target?.type === 'checkbox' ? e.target.checked : e.target.value
+    setForm((prev) => ({ ...prev, [key]: value }))
+  }
+
+  const handleMapConfirm = ({ lat, lng }) => {
+    setForm((prev) => ({
+      ...prev,
+      lat: lat.toFixed(6),
+      lng: lng.toFixed(6),
+    }))
+  }
+
+  const handleSave = async (e) => {
+    e.preventDefault()
+    setSaving(true)
+    setSaved(false)
+    setError('')
+
+    try {
+      const payload = removeNil({
+        name: form.name.trim(),
+        address: form.address.trim() || null,
+        cuisine: form.cuisine.trim() || null,
+        phone: form.phone.trim() || null,
+        lat: toNullableNumber(form.lat),
+        lng: toNullableNumber(form.lng),
+        avg_prep_time: toNullableNumber(form.avg_prep_time),
+        max_capacity_per_hour: toNullableNumber(form.max_capacity_per_hour),
+        is_active: !!form.is_active,
+      })
+
+      const profile = await updateProfile(payload)
+      setForm({
+        name: profile.name ?? '',
+        address: profile.address ?? '',
+        lat: toInputValue(profile.lat),
+        lng: toInputValue(profile.lng),
+        avg_prep_time: toInputValue(profile.avg_prep_time),
+        max_capacity_per_hour: toInputValue(profile.max_capacity_per_hour),
+        is_active: profile.is_active ?? true,
+        cuisine: profile.cuisine ?? '',
+        phone: profile.phone ?? '',
+      })
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2500)
+    } catch (err) {
+      if (!err?.response) {
+        setError('Cannot reach backend API. Start backend on http://localhost:5000 and try again.')
+      } else {
+        setError(err?.response?.data?.message || err?.message || 'Failed to save restaurant details.')
+      }
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm mb-6 p-5 animate-pulse h-48" />
+    )
+  }
+
+  return (
+    <>
+      <LocationPickerMap
+        isOpen={showMapPicker}
+        onClose={() => setShowMapPicker(false)}
+        onConfirm={handleMapConfirm}
+        initialLocation={
+          form.lat !== '' && form.lng !== ''
+            ? { lat: Number(form.lat), lng: Number(form.lng) }
+            : null
+        }
+      />
+
+      <form onSubmit={handleSave} className="bg-white rounded-xl border border-gray-200 shadow-sm mb-6 p-5 space-y-5">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-bold text-gray-800">Restaurant Details</h2>
+            <p className="text-xs text-gray-500 mt-1">
+              Update your profile and operation settings from the restaurants table.
+            </p>
+          </div>
+          <label className="inline-flex items-center gap-2 text-sm text-gray-600">
+            <input
+              type="checkbox"
+              checked={!!form.is_active}
+              onChange={updateField('is_active')}
+              className="h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500"
+            />
+            Active
+          </label>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Restaurant name</label>
+            <input
+              value={form.name}
+              onChange={updateField('name')}
+              required
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Cuisine</label>
+            <input
+              value={form.cuisine}
+              onChange={updateField('cuisine')}
+              placeholder="e.g. Fast Food"
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Phone</label>
+            <input
+              value={form.phone}
+              onChange={updateField('phone')}
+              placeholder="e.g. +8801XXXXXXXXX"
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+            />
+          </div>
+
+          <div className="md:col-span-2">
+            <label className="block text-xs font-medium text-gray-600 mb-1">Address</label>
+            <div className="flex gap-2">
+              <input
+                value={form.address}
+                onChange={updateField('address')}
+                placeholder="Restaurant address"
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+              />
+              <button
+                type="button"
+                onClick={() => setShowMapPicker(true)}
+                className="px-3 py-2 rounded-md border border-orange-300 text-orange-700 text-sm font-medium hover:bg-orange-50 transition-colors whitespace-nowrap"
+              >
+                Pin drop location
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Latitude</label>
+            <input
+              type="number"
+              step="0.000001"
+              value={form.lat}
+              onChange={updateField('lat')}
+              placeholder="23.780800"
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Longitude</label>
+            <input
+              type="number"
+              step="0.000001"
+              value={form.lng}
+              onChange={updateField('lng')}
+              placeholder="90.401500"
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Average prep time (minutes)</label>
+            <input
+              type="number"
+              min="1"
+              step="1"
+              value={form.avg_prep_time}
+              onChange={updateField('avg_prep_time')}
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Maximum capacity per hour</label>
+            <input
+              type="number"
+              min="1"
+              step="1"
+              value={form.max_capacity_per_hour}
+              onChange={updateField('max_capacity_per_hour')}
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+            />
+          </div>
+        </div>
+
+        {error && <p className="text-sm text-red-600">{error}</p>}
+
+        <div className="flex items-center gap-3">
+          <button
+            type="submit"
+            disabled={saving}
+            className="px-4 py-2 rounded-md text-sm font-medium text-white bg-orange-500 hover:bg-orange-600 disabled:opacity-50 transition-colors"
+          >
+            {saving ? 'Saving…' : 'Save restaurant details'}
+          </button>
+          {saved && <span className="text-sm text-green-600 font-medium">Saved!</span>}
+        </div>
+      </form>
+    </>
   )
 }
 
@@ -48,12 +323,13 @@ const Dashboard = () => {
 
   const list = orders?.[activeTab] ?? []
 
-  const pendingCount = orders?.pending?.length ?? 0
-
   return (
     <div>
       {/* Restaurant info tab */}
       <RestaurantInfo />
+
+      {/* Restaurant details editor */}
+      <RestaurantDetailsPanel />
 
       {/* Page header */}
       <div className="mb-6">
