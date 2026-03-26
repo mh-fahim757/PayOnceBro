@@ -16,13 +16,27 @@ import ratingRoutes from './routes/ratingRoutes.js';
 
 const app = express();
 
+const normalizeOrigin = (value) => {
+  if (!value || typeof value !== 'string') return null;
+  return value.trim().replace(/\/+$/, '').toLowerCase();
+};
+
+const configuredOrigins = (process.env.FRONTEND_URL || '')
+  .split(',')
+  .map((v) => normalizeOrigin(v))
+  .filter(Boolean);
+
+const isLocalhostOrigin = (origin) => /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin);
+
 app.use(cors({
   origin: (origin, callback) => {
-    const allowed = process.env.FRONTEND_URL;
-    if (!origin || origin === allowed || origin.startsWith('http://localhost') || origin.startsWith('http://127.0.0.1')) {
+    const normalized = normalizeOrigin(origin);
+    const isAllowedConfigured = normalized ? configuredOrigins.includes(normalized) : false;
+
+    if (!origin || isAllowedConfigured || (normalized && isLocalhostOrigin(normalized))) {
       callback(null, true);
     } else {
-      callback(new Error(`CORS: origin ${origin} not allowed`));
+      callback(new Error(`CORS: origin ${origin} not allowed. Add it to FRONTEND_URL in backend/.env`));
     }
   },
   credentials: true,
