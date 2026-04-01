@@ -15,6 +15,7 @@ import * as Yup from 'yup'
 import useFetch from '../../hooks/useFetch'
 import { signup } from '../../services/authService'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { toast } from 'sonner'
 
 const Register = () => {
     const [errors, setErrors] = useState([])
@@ -44,7 +45,7 @@ const Register = () => {
     useEffect(() => {
         if (data && !error) {
             if (data.requiresEmailConfirmation) {
-                // Email confirmation required — stay on the page; the UI renders a notice below
+                toast.success('Account created. Check your email to verify your account.')
                 return
             }
             // Navigate based on selected role
@@ -54,6 +55,7 @@ const Register = () => {
             else if (role === 'rider') destination = '/rider/dashboard'
             else if (role === 'admin') destination = '/admin/analytics'
 
+            toast.success('Account created. You are signed in.')
             navigate(`${destination}${longlink ? `?createNew=${longlink}` : ""}`, { replace: true })
         }
     }, [data, error])
@@ -101,11 +103,6 @@ const Register = () => {
                 <CardTitle>Sign Up</CardTitle>
                 <CardDescription>Create a new account to get started</CardDescription>
                 {error && <Error message={error.message} />}
-                {data?.requiresEmailConfirmation && (
-                    <p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded px-3 py-2 mt-1">
-                        Account created! Check your email and confirm before logging in.
-                    </p>
-                )}
             </CardHeader>
             <CardContent className="space-y-2">
                 <div className="space-y-1">

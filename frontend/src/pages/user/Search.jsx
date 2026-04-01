@@ -415,14 +415,21 @@ const Search = () => {
             {locationStatus === 'detecting' ? (
               /* Brief loading state while geolocation is resolving */
               <div className="flex flex-col items-center justify-center py-20 gap-4">
-                <div className="w-10 h-10 rounded-full border-4 border-emerald-200 border-t-emerald-500
-                                animate-spin" />
-                <p className="text-sm text-gray-500">Detecting your location…</p>
-                <p className="text-xs text-gray-400">
+                <div className="flex flex-col gap-4 items-center w-full max-w-sm">
+                  <div className="flex items-center space-x-4 w-full">
+                    <div className="h-12 w-12 rounded-full bg-primary/10 animate-pulse" />
+                    <div className="space-y-2 flex-1">
+                      <div className="h-4 bg-muted animate-pulse rounded w-[200px]" />
+                      <div className="h-4 bg-muted animate-pulse rounded w-[160px]" />
+                    </div>
+                  </div>
+                  <p className="text-sm text-muted-foreground animate-pulse">Detecting your location…</p>
+                </div>
+                <p className="text-xs text-muted-foreground mt-4">
                   If this takes too long,{' '}
                   <button
                     onClick={() => setLocationStatus('default')}
-                    className="text-orange-500 underline"
+                    className="text-primary underline hover:text-primary/80 transition-colors"
                   >
                     use the default location
                   </button>

@@ -23,6 +23,8 @@ import RiderDashboard from './pages/rider/Dashboard';
 import RouteView from './pages/rider/RouteView';
 import Earnings from './pages/rider/Earnings';
 
+import { Toaster } from './components/ui/sonner';
+
 function App() {
   return (
     <BrowserRouter>
@@ -66,6 +68,7 @@ function App() {
           {/* Catch-all for 404s */}
           <Route path="*" element={<h1>404 - Not Found</h1>} />
         </Routes>
+        <Toaster position="top-right" richColors />
       </UrlProvider>
     </BrowserRouter>
   );

@@ -16,6 +16,7 @@ import useFetch from '../../hooks/useFetch'
 import { login } from '../../services/authService'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { UrlState } from '../../context/AuthContext'
+import { toast } from 'sonner'
 
 const Login = () => {
     const [errors, setErrors] = useState({})
@@ -33,6 +34,7 @@ const Login = () => {
 
     useEffect(() => {
         if (data && !error) {
+            toast.success('Signed in. Welcome back.')
             // Kick off a context refresh so ProtectedRoute sees the latest role
             fetchuser()
             // Navigate immediately based on role from the login API response

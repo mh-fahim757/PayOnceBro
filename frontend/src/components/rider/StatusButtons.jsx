@@ -2,7 +2,9 @@
 // Displays status transition buttons for the current order
 
 import { useState } from 'react'
+import { useEffect } from 'react'
 import api from '../../services/api.js'
+import { toast } from 'sonner'
 
 const STATUS_TRANSITIONS = {
   pending: 'accepted',
@@ -38,6 +40,8 @@ const StatusButtons = ({ orderId, currentStatus, onStatusUpdate, disabled = fals
         status: nextStatus,
       })
 
+      toast.success(`Order status updated to ${nextStatus.replace('_', ' ')}.`)
+
       // Emit success event with updated order
       if (onStatusUpdate) {
         onStatusUpdate(data)
@@ -49,6 +53,11 @@ const StatusButtons = ({ orderId, currentStatus, onStatusUpdate, disabled = fals
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    if (!error) return
+    toast.error(error, { id: `error-${error}` })
+  }, [error])
 
   if (!nextStatus) {
     return (
@@ -62,12 +71,6 @@ const StatusButtons = ({ orderId, currentStatus, onStatusUpdate, disabled = fals
 
   return (
     <div className="flex flex-col gap-3">
-      {error && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">
-          {error}
-        </div>
-      )}
-
       <div className="flex gap-2">
         <button
           onClick={handleUpdateStatus}

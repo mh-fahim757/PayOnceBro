@@ -1,12 +1,18 @@
 import { useState, useEffect } from 'react'
 import StatusButtons from '../../components/rider/StatusButtons.jsx'
 import api from '../../services/api.js'
+import { toast } from 'sonner'
 
 const Dashboard = () => {
   const [assignments, setAssignments] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [riderProfile, setRiderProfile] = useState(null)
+
+  useEffect(() => {
+    if (!error) return
+    toast.error(error, { id: `error-${error}` })
+  }, [error])
 
   // Fetch rider profile and assignments on mount
   useEffect(() => {
@@ -52,21 +58,6 @@ const Dashboard = () => {
   return (
     <div>
       <h1>Rider Dashboard</h1>
-
-      {/* Error Banner */}
-      {error && (
-        <div style={{
-          padding: '15px',
-          background: '#fee2e2',
-          border: '1px solid #fecaca',
-          borderRadius: '6px',
-          marginBottom: '20px',
-          color: '#7f1d1d',
-          fontSize: '14px'
-        }}>
-          <strong>⚠️ Error:</strong> {error}
-        </div>
-      )}
 
       {/* Rider Profile Summary */}
       {riderProfile ? (
@@ -121,19 +112,6 @@ const Dashboard = () => {
       }}>
         <h3>Current Assignments</h3>
         
-        {error && (
-          <div style={{
-            padding: '12px',
-            background: '#fee2e2',
-            border: '1px solid #fecaca',
-            borderRadius: '4px',
-            marginBottom: '15px',
-            color: '#991b1b'
-          }}>
-            {error}
-          </div>
-        )}
-
         {assignments.length === 0 ? (
           <p style={{ color: '#666', fontStyle: 'italic' }}>
             No active assignments. You'll receive new deliveries when they're available.
