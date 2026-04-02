@@ -49,7 +49,7 @@ const Login = () => {
                 navigate(`${longlink ? `?createNew=${longlink}` : "/home"}`)
             }
         }
-    }, [data, error])
+    }, [data, error, fetchuser, navigate, longlink])
 
     const handleInputChange = (e) => {
         const { name, value } = e.target

@@ -13,8 +13,11 @@ import RestaurantReviews from './pages/restaurant/Reviews';
 
 // User pages (Member A)
 import UserLayout from './layouts/UserLayout';
+import Home from './pages/user/Home';
 import Search from './pages/user/Search';
+import RestaurantProfile from './pages/user/RestaurantProfile';
 import Cart from './pages/user/Cart';
+import Orders from './pages/user/Orders';
 
 // Protected route guard (Member D)
 import ProtectedRoute from './components/common/ProtectedRoute';
@@ -48,11 +51,25 @@ function App() {
           {/* User Routes (Member A) */}
           <Route element={<ProtectedRoute role="user" />}>
             <Route element={<UserLayout />}>
-              <Route path="/home" element={<Search />} />
+              <Route path="/home" element={<Home />} />
               <Route path="/search" element={<Search />} />
+              <Route path="/restaurants/:id" element={<RestaurantProfile />} />
               <Route path="/cart" element={<Cart />} />
-              <Route path="/orders" element={<div className="p-10 text-center text-xl text-gray-500 mt-20">📦 My Orders page is under construction (Member A)</div>} />
+              <Route path="/orders" element={<Orders />} />
             </Route>
+          </Route>
+
+          {/* Admin route placeholder to keep role redirects valid until Sprint 3/4 admin pages are built */}
+          <Route element={<ProtectedRoute role="admin" />}>
+            <Route
+              path="/admin/analytics"
+              element={
+                <div className="p-10 text-center text-gray-600">
+                  <h1 className="text-2xl font-semibold">Admin Analytics</h1>
+                  <p className="mt-2 text-sm">Analytics dashboard is planned for Sprint 3.</p>
+                </div>
+              }
+            />
           </Route>
 
           {/* Restaurant Routes (Member C) */}

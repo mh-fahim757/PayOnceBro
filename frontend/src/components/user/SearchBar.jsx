@@ -48,7 +48,7 @@ const SearchBar = ({ onSearch, categories = [], loading = false }) => {
     }, 400)
 
     return () => clearTimeout(debounceRef.current)
-  }, [query, minPrice, maxPrice, cuisine, location])
+  }, [query, minPrice, maxPrice, cuisine, location, onSearch])
 
   // Ask the browser for the user's GPS location
   const requestLocation = () => {

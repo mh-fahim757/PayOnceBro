@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import StatusButtons from '../../components/rider/StatusButtons.jsx'
-import api from '../../services/api.js'
+import { getProfile, getAssignments, getEarnings } from '../../services/riderService.js'
 import { toast } from 'sonner'
 
 const Dashboard = () => {
@@ -8,6 +8,7 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [riderProfile, setRiderProfile] = useState(null)
+  const [earnings, setEarnings] = useState({ todayEarnings: 0, todayDeliveries: 0 })
 
   useEffect(() => {
     if (!error) return
@@ -18,18 +19,22 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch rider profile — this is critical
-        const { data: profile } = await api.get('/rider/profile/me')
-        setRiderProfile(profile)
-        setError(null)
+        const [profile, assignmentList, earningsSummary] = await Promise.all([
+          getProfile(),
+          getAssignments(),
+          getEarnings(),
+        ])
 
-        // Fetch assigned orders (when Member D builds this endpoint)
-        // For now, we'll show a placeholder
-        setAssignments([])
+        setRiderProfile(profile)
+        setAssignments(assignmentList)
+        setEarnings({
+          todayEarnings: earningsSummary?.todayEarnings ?? 0,
+          todayDeliveries: earningsSummary?.todayDeliveries ?? 0,
+        })
+        setError(null)
       } catch (err) {
         console.error('Failed to fetch rider profile:', err)
-        // Still try to show something even if profile fetch fails
-        setError(err.response?.data?.message || 'Failed to load rider profile. Please refresh.')
+        setError(err.response?.data?.message || 'Failed to load rider dashboard. Please refresh.')
       } finally {
         setLoading(false)
       }
@@ -39,9 +44,7 @@ const Dashboard = () => {
   }, [])
 
   const handleStatusUpdate = (updatedOrder) => {
-    // Refresh assignments after status update
-    // This will be more sophisticated when Member D builds proper order fetching
-    console.log('Order status updated:', updatedOrder)
+    if (!updatedOrder?.id) return
     setAssignments(prev =>
       prev.map(a => (a.id === updatedOrder.id ? updatedOrder : a))
     )
@@ -137,6 +140,12 @@ const Dashboard = () => {
                       {order.status}
                     </span>
                   </p>
+                  <p style={{ fontSize: '14px', color: '#666' }}>
+                    Stops: <span style={{ fontWeight: 'bold' }}>{order.restaurants?.length || 0}</span>
+                  </p>
+                  <p style={{ fontSize: '14px', color: '#666' }}>
+                    Items: <span style={{ fontWeight: 'bold' }}>{order.itemCount || 0}</span>
+                  </p>
                 </div>
 
                 {/* Status Update Buttons */}
@@ -162,11 +171,11 @@ const Dashboard = () => {
         <div style={{ display: 'grid', gap: '15px', gridTemplateColumns: '1fr 1fr' }}>
           <div>
             <p style={{ fontSize: '12px', color: '#666' }}>Earnings</p>
-            <p style={{ fontSize: '20px', fontWeight: 'bold' }}>$0.00</p>
+            <p style={{ fontSize: '20px', fontWeight: 'bold' }}>৳{Number(earnings.todayEarnings || 0).toFixed(0)}</p>
           </div>
           <div>
             <p style={{ fontSize: '12px', color: '#666' }}>Deliveries</p>
-            <p style={{ fontSize: '20px', fontWeight: 'bold' }}>0</p>
+            <p style={{ fontSize: '20px', fontWeight: 'bold' }}>{earnings.todayDeliveries || 0}</p>
           </div>
         </div>
       </div>

@@ -58,7 +58,7 @@ const Register = () => {
             toast.success('Account created. You are signed in.')
             navigate(`${destination}${longlink ? `?createNew=${longlink}` : ""}`, { replace: true })
         }
-    }, [data, error])
+    }, [data, error, formData.role, longlink, navigate])
 
     const handleSignup = async () => {
         setErrors([])

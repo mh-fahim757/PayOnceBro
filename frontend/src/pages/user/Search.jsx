@@ -14,6 +14,8 @@ import FoodCard from '../../components/user/FoodCard'
 import LocationPickerMap from '../../components/user/LocationPickerMap'
 import NearbyRestaurantsView from '../../components/user/NearbyRestaurantsView'
 import { searchFood, getCategories as fetchApiCategories } from '../../services/searchService'
+import { useCart } from '../../context/CartContext'
+import { toast } from 'sonner'
 
 // ─── Fallback location: Dhaka city centre ────────────────────────────────────
 const DHAKA_DEFAULT = { lat: 23.7808, lng: 90.4015 }
@@ -151,11 +153,11 @@ const Search = () => {
   const [hasSearched,   setHasSearched]   = useState(false)
   const [lastQuery,     setLastQuery]     = useState('')
   const [userLocation,  setUserLocation]  = useState(null)
-  const [cart,          setCart]          = useState([])
-  const [cartNotif,     setCartNotif]     = useState(null)
   const [searchLoading, setSearchLoading] = useState(false)
   const [categories,    setCategories]    = useState(ALL_CATEGORIES)
   const [isDemoMode,    setIsDemoMode]    = useState(false)
+
+  const { addItem, itemCount, subtotal } = useCart()
 
   useEffect(() => {
     fetchApiCategories()
@@ -192,13 +194,8 @@ const Search = () => {
   }, [userLocation])
 
   const handleAddToCart = (item) => {
-    setCart((prev) => {
-      const existing = prev.find((c) => c.menuItem.id === item.menuItem.id)
-      if (existing) return prev.map((c) => c.menuItem.id === item.menuItem.id ? { ...c, quantity: c.quantity + 1 } : c)
-      return [...prev, { ...item, quantity: 1 }]
-    })
-    setCartNotif(`${item.menuItem.name} added! 🛒`)
-    setTimeout(() => setCartNotif(null), 2500)
+    addItem(item.menuItem, item.restaurant)
+    toast.success(`${item.menuItem.name} added to cart`)
   }
 
   // When user confirms a new location from the map picker
@@ -217,8 +214,8 @@ const Search = () => {
     }, {})
   )
 
-  const cartCount = cart.reduce((s, i) => s + i.quantity, 0)
-  const cartTotal = cart.reduce((s, i) => s + i.menuItem.price * i.quantity, 0)
+  const cartCount = itemCount
+  const cartTotal = subtotal
 
   // ── Location status label shown in the nearby tab header ─────────────────
   const locationLabel = {
@@ -245,14 +242,6 @@ const Search = () => {
         onConfirm={handleMapConfirm}
         initialLocation={mapLocation}
       />
-
-      {/* ── Cart notification toast ───────────────────────────────── */}
-      {cartNotif && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white
-                        text-sm font-medium px-5 py-3 rounded-full shadow-xl">
-          {cartNotif}
-        </div>
-      )}
 
       {/* ── Sticky header with tabs ───────────────────────────────── */}
       <div className="sticky top-0 z-10 bg-white border-b border-gray-200 shadow-sm">

@@ -5,13 +5,14 @@ const PrepTimer = ({ prepTimeMinutes = 30 }) => {
   const totalSeconds = prepTimeMinutes * 60
   const [secondsLeft, setSecondsLeft] = useState(totalSeconds)
   const intervalRef = useRef(null)
+  const isDone = secondsLeft <= 0
 
   useEffect(() => {
     setSecondsLeft(prepTimeMinutes * 60)
   }, [prepTimeMinutes])
 
   useEffect(() => {
-    if (secondsLeft <= 0) return
+    if (isDone) return
     const id = setInterval(() => {
       setSecondsLeft((s) => {
         if (s <= 1) {
@@ -23,7 +24,7 @@ const PrepTimer = ({ prepTimeMinutes = 30 }) => {
     }, 1000)
     intervalRef.current = id
     return () => clearInterval(id)
-  }, [secondsLeft <= 0]) // Fixed exhaustive deps array somewhat by changing condition
+  }, [isDone])
 
   if (secondsLeft <= 0) {
     return (

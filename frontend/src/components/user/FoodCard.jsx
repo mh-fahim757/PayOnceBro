@@ -103,7 +103,7 @@ const FoodCard = ({ item, onAddToCart }) => {
           </span>
           <Button 
             size="sm" 
-            onClick={() => onAddToCart({ ...menuItem, restaurant })}
+            onClick={() => onAddToCart(item)}
             className="rounded-xl px-4 font-semibold shadow-sm hover:scale-105 transition-transform"
           >
             Add to Cart

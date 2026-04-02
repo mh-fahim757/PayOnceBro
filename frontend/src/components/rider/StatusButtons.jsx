@@ -7,8 +7,6 @@ import api from '../../services/api.js'
 import { toast } from 'sonner'
 
 const STATUS_TRANSITIONS = {
-  pending: 'accepted',
-  accepted: 'preparing',
   preparing: 'pickup',
   pickup: 'on_the_way',
   on_the_way: 'delivered',
@@ -44,7 +42,7 @@ const StatusButtons = ({ orderId, currentStatus, onStatusUpdate, disabled = fals
 
       // Emit success event with updated order
       if (onStatusUpdate) {
-        onStatusUpdate(data)
+        onStatusUpdate(data?.order ?? data)
       }
     } catch (err) {
       console.error('Status update failed:', err)
@@ -60,10 +58,17 @@ const StatusButtons = ({ orderId, currentStatus, onStatusUpdate, disabled = fals
   }, [error])
 
   if (!nextStatus) {
+    const message =
+      currentStatus === 'accepted'
+        ? 'Waiting for restaurant to start preparing'
+        : currentStatus === 'delivered'
+          ? 'Order completed'
+          : 'Order in final state'
+
     return (
       <div className="flex items-center justify-center p-4 bg-gray-50 rounded">
         <span className="text-sm text-gray-600">
-          Order {currentStatus === 'delivered' ? 'completed' : 'in final state'}
+          {message}
         </span>
       </div>
     )

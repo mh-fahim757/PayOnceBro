@@ -5,8 +5,8 @@ import LocationTracker from '../components/rider/LocationTracker.jsx'
 
 const navLinks = [
   { to: '/rider/dashboard', label: 'Dashboard' },
-  { to: '/rider/orders', label: 'Pending Orders' },
-  { to: '/rider/history', label: 'History' },
+  { to: '/rider/route', label: 'Route' },
+  { to: '/rider/earnings', label: 'Earnings' },
 ]
 
 const RiderLayout = () => {

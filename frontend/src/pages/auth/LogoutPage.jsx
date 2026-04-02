@@ -17,7 +17,7 @@ const LogoutPage = () => {
             .then(() => toast.success('Signed out.'))
             .catch(() => { toast.error("Couldn't sign out. Please try again.") })
             .finally(() => navigate('/auth', { replace: true }))
-    }, [])
+    }, [logout, navigate])
 
     return (
         <div style={{ display: 'flex', justifyContent: 'center', marginTop: '4rem' }}>
