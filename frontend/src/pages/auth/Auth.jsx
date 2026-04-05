@@ -27,7 +27,6 @@ const Auth = () => {
     const syncViewportState = () => {
       const mobile = mediaQuery.matches
       setIsMobileView(mobile)
-      if (!mobile) setShowMobileActions(true)
     }
 
     syncViewportState()
@@ -37,7 +36,7 @@ const Auth = () => {
   }, [])
 
   useEffect(() => {
-    if (!isMobileView || !mobileActionsRef.current) return
+    if (!mobileActionsRef.current) return
 
     setShowMobileActions(false)
 
@@ -124,7 +123,7 @@ const Auth = () => {
           <div
             ref={mobileActionsRef}
             className={`mt-8 rounded-2xl border border-border bg-card p-3 shadow-lg transition-all duration-700 ease-out ${
-              showMobileActions ? 'translate-y-0 opacity-100' : 'translate-y-14 opacity-0 lg:translate-y-0 lg:opacity-100'
+              showMobileActions ? 'translate-y-0 opacity-100' : 'translate-y-14 opacity-0'
             }`}
           >
             <div className="grid grid-cols-2 gap-3">

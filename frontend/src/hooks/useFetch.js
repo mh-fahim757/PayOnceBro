@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useCallback, useState } from "react"
 import { toast } from 'sonner'
 
 const useFetch = (cb) => {
@@ -6,7 +6,7 @@ const useFetch = (cb) => {
     const [error, setError] = useState(null)
     const [loading, setLoading] = useState(false)
 
-    const fn = async (...args) => {
+    const fn = useCallback(async (...args) => {
         setLoading(true)
         setError(null)
         try {
@@ -24,7 +24,7 @@ const useFetch = (cb) => {
         } finally {
             setLoading(false)
         }
-    }
+    }, [cb])
     return {
         data,
         error,
