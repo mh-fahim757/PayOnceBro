@@ -1,0 +1,132 @@
+import React, { useEffect, useMemo, useState } from 'react'
+import { getAnalytics } from '../../services/adminService'
+import StatCard from '../../components/admin/StatCard'
+import RevenueChart from '../../components/admin/RevenueChart'
+import Error from '../../components/common/Error'
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
+import { Skeleton } from '../../components/ui/skeleton'
+
+const formatCount = (value) => new Intl.NumberFormat().format(Number(value || 0))
+
+const formatMoney = (value) => {
+  const amount = Number(value || 0)
+  return new Intl.NumberFormat('en-BD', {
+    style: 'currency',
+    currency: 'BDT',
+    maximumFractionDigits: 0,
+  }).format(amount)
+}
+
+const Analytics = () => {
+  const [data, setData] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    let mounted = true
+
+    const load = async () => {
+      setLoading(true)
+      setError('')
+      try {
+        const analytics = await getAnalytics()
+        if (mounted) setData(analytics)
+      } catch (err) {
+        if (mounted) setError(err?.response?.data?.message || 'Failed to load analytics')
+      } finally {
+        if (mounted) setLoading(false)
+      }
+    }
+
+    load()
+    return () => {
+      mounted = false
+    }
+  }, [])
+
+  const weeklyRevenue = useMemo(() => {
+    const rows = data?.weeklyRevenue || []
+    return rows.map((row) => ({
+      ...row,
+      dayLabel: row.day?.slice(5) || 'N/A',
+      revenue: Number(row.revenue || 0),
+    }))
+  }, [data])
+
+  if (loading) {
+    return (
+      <section className="space-y-6">
+        <div className="space-y-2">
+          <Skeleton className="h-8 w-56" />
+          <Skeleton className="h-4 w-80" />
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 5 }).map((_, idx) => (
+            <Card key={idx}>
+              <CardHeader>
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-8 w-24" />
+              </CardHeader>
+            </Card>
+          ))}
+        </div>
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-6 w-40" />
+          </CardHeader>
+          <CardContent>
+            <Skeleton className="h-64 w-full" />
+          </CardContent>
+        </Card>
+      </section>
+    )
+  }
+
+  if (error) {
+    return (
+      <>
+        <Error message={error} />
+        <Card className="border-destructive/40">
+          <CardHeader>
+            <CardTitle className="text-base text-destructive">Analytics unavailable</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-destructive">{error}</p>
+          </CardContent>
+        </Card>
+      </>
+    )
+  }
+
+  return (
+    <section className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">Admin Analytics</h1>
+        <p className="text-sm text-muted-foreground">Real-time platform performance overview.</p>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <StatCard label="Total Orders" value={formatCount(data?.totalOrders)} />
+        <StatCard
+          label="Clustered Orders"
+          value={formatCount(data?.clusteredOrders)}
+          helper={`${Number(data?.clusterRate || 0).toFixed(2)}% of total orders`}
+        />
+        <StatCard
+          label="Average Delivery Time"
+          value={`${Number(data?.avgDeliveryTime || 0).toFixed(1)} mins`}
+        />
+        <StatCard label="Daily Sales" value={formatMoney(data?.dailySales)} />
+        <StatCard
+          label="Most Ordered Item"
+          value={data?.mostOrderedItem?.name || 'N/A'}
+          helper={data?.mostOrderedItem ? `${formatCount(data.mostOrderedItem.count)} orders` : 'No orders yet'}
+        />
+      </div>
+
+      <RevenueChart data={weeklyRevenue} />
+    </section>
+  )
+}
+
+export default Analytics

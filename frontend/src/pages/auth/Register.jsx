@@ -48,17 +48,10 @@ const Register = () => {
                 toast.success('Account created. Check your email to verify your account.')
                 return
             }
-            // Navigate based on selected role
-            const role = formData.role
-            let destination = '/home'
-            if (role === 'restaurant_owner' || role === 'restaurant') destination = '/restaurant/dashboard'
-            else if (role === 'rider') destination = '/rider/dashboard'
-            else if (role === 'admin') destination = '/admin/analytics'
-
             toast.success('Account created. You are signed in.')
-            navigate(`${destination}${longlink ? `?createNew=${longlink}` : ""}`, { replace: true })
+            navigate(`/auth${longlink ? `?createNew=${longlink}` : ''}`, { replace: true })
         }
-    }, [data, error, formData.role, longlink, navigate])
+    }, [data, error, longlink, navigate])
 
     const handleSignup = async () => {
         setErrors({})

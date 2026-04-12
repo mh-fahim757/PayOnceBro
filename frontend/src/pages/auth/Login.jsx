@@ -33,22 +33,16 @@ const Login = () => {
     const { data, error, loading, fn: fnlogin } = useFetch(login, formdata)
 
     useEffect(() => {
-        if (data && !error) {
-            toast.success('Signed in. Welcome back.')
-            // Kick off a context refresh so ProtectedRoute sees the latest role
-            fetchuser()
-            // Navigate immediately based on role from the login API response
-            const rawRole = data?.user?.role ?? data?.user?.user_metadata?.role ?? ''
-            const role = rawRole.trim().toLowerCase()
+        const finalizeLogin = async () => {
+            if (!(data && !error)) return
 
-            if (role === 'rider') {
-                navigate('/rider/dashboard')
-            } else if (role === 'restaurant_owner') {
-                navigate('/restaurant/dashboard')
-            } else {
-                navigate(`${longlink ? `?createNew=${longlink}` : "/home"}`)
-            }
+            toast.success('Signed in. Welcome back.')
+            // Refresh context user and delegate role-based redirect to /auth.
+            await fetchuser()
+            navigate(`/auth${longlink ? `?createNew=${longlink}` : ''}`, { replace: true })
         }
+
+        finalizeLogin()
     }, [data, error, fetchuser, navigate, longlink])
 
     const handleInputChange = (e) => {

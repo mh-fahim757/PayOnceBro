@@ -1,0 +1,143 @@
+import supabase from '../config/db.js'
+
+const ANALYTICS_LOOKBACK_DAYS = Number(process.env.ANALYTICS_LOOKBACK_DAYS) || 90
+const ANALYTICS_MAX_ROWS = Number(process.env.ANALYTICS_MAX_ROWS) || 5000
+
+const toDayKey = (isoDate) => new Date(isoDate).toISOString().slice(0, 10)
+
+const getLast7DayBuckets = (nowInput = new Date()) => {
+  const buckets = []
+  const now = new Date(nowInput)
+
+  for (let i = 6; i >= 0; i -= 1) {
+    const day = new Date(now)
+    day.setDate(now.getDate() - i)
+    const key = day.toISOString().slice(0, 10)
+    buckets.push({ day: key, revenue: 0 })
+  }
+
+  return buckets
+}
+
+export const calculateAverageDeliveryMinutes = (orders = []) => {
+  const durations = (orders ?? [])
+    .map((order) => {
+      const start = new Date(order.created_at).getTime()
+      const end = new Date(order.delivered_at).getTime()
+      if (Number.isNaN(start) || Number.isNaN(end) || end < start) return null
+      return (end - start) / 60000
+    })
+    .filter((value) => value != null)
+
+  if (!durations.length) return 0
+  return Number((durations.reduce((sum, value) => sum + value, 0) / durations.length).toFixed(2))
+}
+
+export const buildWeeklyRevenue = (orders = [], nowInput = new Date()) => {
+  const buckets = getLast7DayBuckets(nowInput)
+  const bucketMap = new Map(buckets.map((b) => [b.day, b]))
+
+  ;(orders ?? []).forEach((row) => {
+    const key = toDayKey(row.created_at)
+    const bucket = bucketMap.get(key)
+    if (!bucket) return
+    bucket.revenue = Number((bucket.revenue + Number(row.total_price || 0)).toFixed(2))
+  })
+
+  return buckets
+}
+
+export const getAnalytics = async () => {
+  const lookbackStart = new Date()
+  lookbackStart.setDate(lookbackStart.getDate() - ANALYTICS_LOOKBACK_DAYS)
+  lookbackStart.setHours(0, 0, 0, 0)
+
+  const [{ count: totalOrders, error: totalErr }, { count: clusteredOrders, error: clusteredErr }] = await Promise.all([
+    supabase.from('orders').select('id', { count: 'exact', head: true }),
+    supabase.from('orders').select('id', { count: 'exact', head: true }).not('cluster_id', 'is', null),
+  ])
+
+  if (totalErr) throw totalErr
+  if (clusteredErr) throw clusteredErr
+
+  const { data: deliveredOrders, error: deliveredErr } = await supabase
+    .from('orders')
+    .select('created_at, delivered_at')
+    .eq('status', 'delivered')
+    .not('delivered_at', 'is', null)
+    .gte('created_at', lookbackStart.toISOString())
+    .order('created_at', { ascending: false })
+    .limit(ANALYTICS_MAX_ROWS)
+
+  if (deliveredErr) throw deliveredErr
+
+  const avgDeliveryTime = calculateAverageDeliveryMinutes(deliveredOrders)
+
+  const startOfDay = new Date()
+  startOfDay.setHours(0, 0, 0, 0)
+
+  const { data: todayOrders, error: todayErr } = await supabase
+    .from('orders')
+    .select('total_price, status')
+    .gte('created_at', startOfDay.toISOString())
+    .eq('status', 'delivered')
+
+  if (todayErr) throw todayErr
+
+  const dailySales = Number(
+    ((todayOrders ?? []).reduce((sum, row) => sum + Number(row.total_price || 0), 0)).toFixed(2)
+  )
+
+  const { data: orderItems, error: orderItemsErr } = await supabase
+    .from('order_items')
+    .select('menu_item_id, menu_items(name), orders!inner(status, created_at)')
+    .eq('orders.status', 'delivered')
+    .gte('orders.created_at', lookbackStart.toISOString())
+    .limit(ANALYTICS_MAX_ROWS)
+
+  if (orderItemsErr) throw orderItemsErr
+
+  const itemCounter = new Map()
+  ;(orderItems ?? []).forEach((row) => {
+    const id = row.menu_item_id
+    if (!id) return
+
+    const existing = itemCounter.get(id) || {
+      id,
+      name: row.menu_items?.name || 'Unknown item',
+      count: 0,
+    }
+    existing.count += 1
+    itemCounter.set(id, existing)
+  })
+
+  const mostOrderedItem = [...itemCounter.values()].sort((a, b) => b.count - a.count)[0] || null
+
+  const sevenDaysAgo = new Date()
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6)
+  sevenDaysAgo.setHours(0, 0, 0, 0)
+
+  const { data: weeklyOrders, error: weeklyErr } = await supabase
+    .from('orders')
+    .select('created_at, total_price')
+    .gte('created_at', sevenDaysAgo.toISOString())
+    .eq('status', 'delivered')
+
+  if (weeklyErr) throw weeklyErr
+
+  const buckets = buildWeeklyRevenue(weeklyOrders)
+
+  const total = Number(totalOrders || 0)
+  const clustered = Number(clusteredOrders || 0)
+  const clusterRate = total > 0 ? Number(((clustered / total) * 100).toFixed(2)) : 0
+
+  return {
+    totalOrders: total,
+    clusteredOrders: clustered,
+    clusterRate,
+    avgDeliveryTime,
+    dailySales,
+    mostOrderedItem,
+    weeklyRevenue: buckets,
+  }
+}

@@ -25,6 +25,8 @@ import RiderLayout from './layouts/RiderLayout';
 import RiderDashboard from './pages/rider/Dashboard';
 import RouteView from './pages/rider/RouteView';
 import Earnings from './pages/rider/Earnings';
+import AdminLayout from './layouts/AdminLayout';
+import Analytics from './pages/admin/Analytics';
 
 import { Toaster } from './components/ui/sonner';
 
@@ -59,17 +61,12 @@ function App() {
             </Route>
           </Route>
 
-          {/* Admin route placeholder to keep role redirects valid until Sprint 3/4 admin pages are built */}
+          {/* Admin Routes (Member D) */}
           <Route element={<ProtectedRoute role="admin" />}>
-            <Route
-              path="/admin/analytics"
-              element={
-                <div className="p-10 text-center text-gray-600">
-                  <h1 className="text-2xl font-semibold">Admin Analytics</h1>
-                  <p className="mt-2 text-sm">Analytics dashboard is planned for Sprint 3.</p>
-                </div>
-              }
-            />
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route index element={<Navigate to="analytics" replace />} />
+              <Route path="analytics" element={<Analytics />} />
+            </Route>
           </Route>
 
           {/* Restaurant Routes (Member C) */}

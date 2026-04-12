@@ -1,5 +1,7 @@
 import * as restaurantModel from '../models/restaurantModel.js'
+import * as menuModel from '../models/menuModel.js'
 import { findBestRider } from '../services/riderAssignmentService.js'
+import { generateMenuTags } from '../services/geminiService.js'
 
 const getDefaultRestaurantName = (email) => {
   const fallback = 'My Restaurant'
@@ -205,7 +207,16 @@ export const addMenuItem = async (req, res, next) => {
       image_url: image_url ?? null,
       is_available: true,
     })
-    res.status(201).json({ item })
+
+    let taggedItem = item
+    try {
+      const tags = await generateMenuTags(item.name, item.description)
+      taggedItem = await menuModel.updateTags(item.id, tags)
+    } catch {
+      // Menu write should still succeed even if AI tagging fails.
+    }
+
+    res.status(201).json({ item: taggedItem })
   } catch (err) {
     next(err)
   }
@@ -229,7 +240,21 @@ export const editMenuItem = async (req, res, next) => {
     if (updates.price !== undefined) updates.price = Number(updates.price)
 
     const item = await restaurantModel.updateMenuItem(restaurant.id, itemId, updates)
-    res.json({ item })
+
+    const shouldRegenerateTags = updates.name !== undefined || updates.description !== undefined
+    if (!shouldRegenerateTags) {
+      return res.json({ item })
+    }
+
+    let taggedItem = item
+    try {
+      const tags = await generateMenuTags(item.name, item.description)
+      taggedItem = await menuModel.updateTags(item.id, tags)
+    } catch {
+      // Keep successful menu updates even if Gemini is unavailable.
+    }
+
+    res.json({ item: taggedItem })
   } catch (err) {
     next(err)
   }

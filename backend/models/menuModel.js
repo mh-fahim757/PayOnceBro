@@ -121,3 +121,18 @@ export const getByIds = async (ids) => {
   if (error) throw error
   return data ?? []
 }
+
+/**
+ * updateTags — updates ai_tags for a menu item.
+ */
+export const updateTags = async (itemId, tags = []) => {
+  const { data, error } = await supabase
+    .from('menu_items')
+    .update({ ai_tags: Array.isArray(tags) ? tags : [] })
+    .eq('id', itemId)
+    .select('*')
+    .single()
+
+  if (error) throw error
+  return data
+}

@@ -2,6 +2,14 @@ import { Navigate, Outlet } from 'react-router-dom';
 import { UrlState } from '../../context/AuthContext';
 import { BeatLoader } from 'react-spinners';
 
+const getRoleHome = (role) => {
+  const normalized = String(role || '').trim().toLowerCase();
+  if (normalized === 'restaurant_owner' || normalized === 'restaurant') return '/restaurant/dashboard';
+  if (normalized === 'rider') return '/rider/dashboard';
+  if (normalized === 'admin') return '/admin/analytics';
+  return '/home';
+};
+
 const ProtectedRoute = ({ role }) => {
   const { user, isAuthenticated, loading, isSessionLoaded } = UrlState();
 
@@ -34,7 +42,7 @@ const ProtectedRoute = ({ role }) => {
 
   if (!isRoleAllowed()) {
     console.warn('ProtectedRoute: Expected role:', requiredRole, 'but got:', userRole);
-    return <Navigate to="/auth" replace />;
+    return <Navigate to={getRoleHome(userRole)} replace />;
   }
 
   return <Outlet />;
