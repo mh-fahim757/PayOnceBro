@@ -211,7 +211,16 @@ export const updateStatus = async (req, res, next) => {
     }
 
     if ((role === 'restaurant_owner' || role === 'restaurant') && status === 'accepted') {
-      await findBestRider(orderId)
+      try {
+        const assignmentResult = await findBestRider(orderId)
+        if (assignmentResult) {
+          console.log(`✅ Rider assigned to order ${orderId}:`, assignmentResult)
+        } else {
+          console.warn(`⚠️ No rider assigned to order ${orderId} (no available riders or location data missing)`)
+        }
+      } catch (assignErr) {
+        console.error(`❌ Rider assignment failed for order ${orderId}:`, assignErr?.message || assignErr)
+      }
     }
 
     if (status === 'delivered' && role === 'rider') {
