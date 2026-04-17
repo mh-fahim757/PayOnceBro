@@ -30,6 +30,7 @@ const Earnings = () => {
         },
         rating: data.rating || 0,
       };
+      console.log('✅ Rating updated in Earnings:', data.rating);
       
       setEarnings(transformed);
       setError(null);

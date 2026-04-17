@@ -245,6 +245,7 @@ export const getEarnings = async (req, res, next) => {
       weeklyDeliveries: totals.weeklyDeliveries,
       monthlyEarnings: Number(totals.monthlyEarnings.toFixed(2)),
       monthlyDeliveries: totals.monthlyDeliveries,
+      rating: rider.avg_rating || 0,
     })
   } catch (error) {
     next(error)

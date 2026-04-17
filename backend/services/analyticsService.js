@@ -153,6 +153,45 @@ export const getAnalytics = async () => {
   if (ridersErr) throw ridersErr
   if (deliveredWithRiderErr) throw deliveredWithRiderErr
 
+  const { data: lowRatedRows, error: lowRatedErr } = await supabase
+    .from('riders')
+    .select('id, user_id, avg_rating, total_deliveries, is_available')
+    .lt('avg_rating', 3)
+    .order('avg_rating', { ascending: false })
+    .limit(10)
+
+  if (lowRatedErr) throw lowRatedErr
+
+  const lowRatedUserIds = [...new Set((lowRatedRows ?? []).map((row) => row.user_id).filter(Boolean))]
+  let profileMap = {}
+
+  if (lowRatedUserIds.length > 0) {
+    const { data: profiles, error: profileErr } = await supabase
+      .from('profiles')
+      .select('id, full_name, username')
+      .in('id', lowRatedUserIds)
+
+    if (profileErr) throw profileErr
+
+    profileMap = (profiles ?? []).reduce((acc, profile) => {
+      acc[profile.id] = profile
+      return acc
+    }, {})
+  }
+
+  const lowRatedRiders = (lowRatedRows ?? []).map((row) => {
+    const profile = profileMap[row.user_id] || {}
+    const fallbackName = row.user_id ? `Rider ${String(row.user_id).slice(0, 8)}` : 'Unknown rider'
+    return {
+      id: row.id,
+      userId: row.user_id,
+      name: profile.full_name || profile.username || fallbackName,
+      avgRating: Number(row.avg_rating || 0),
+      totalDeliveries: Number(row.total_deliveries || 0),
+      isAvailable: Boolean(row.is_available),
+    }
+  })
+
   const buckets = buildWeeklyRevenue(weeklyOrders)
 
   const total = Number(totalOrders || 0)
@@ -175,5 +214,6 @@ export const getAnalytics = async () => {
     dailySales,
     mostOrderedItem,
     weeklyRevenue: buckets,
+    lowRatedRiders,
   }
 }

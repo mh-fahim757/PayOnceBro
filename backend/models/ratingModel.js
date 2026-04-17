@@ -133,3 +133,62 @@ export const updateRestaurantAverage = async (restaurantId, avgRating) => {
   if (error) throw error
   return data
 }
+
+// Rider Rating Methods
+
+export const findExistingRiderRating = async (orderId, userId, riderId) => {
+  const { data, error } = await supabase
+    .from('ratings')
+    .select('id')
+    .eq('order_id', orderId)
+    .eq('rated_by', userId)
+    .eq('rider_id', riderId)
+    .limit(1)
+
+  if (error) throw error
+  return (data ?? [])[0] ?? null
+}
+
+export const createRiderRating = async ({ orderId, userId, riderId, score, reviewText }) => {
+  const { data, error } = await supabase
+    .from('ratings')
+    .insert({
+      order_id: orderId,
+      rated_by: userId,
+      rider_id: riderId,
+      score,
+      review_text: reviewText ?? null,
+    })
+    .select('*')
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export const calculateRiderAverage = async (riderId) => {
+  const { data, error } = await supabase
+    .from('ratings')
+    .select('score')
+    .eq('rider_id', riderId)
+
+  if (error) throw error
+
+  const scores = (data ?? []).map((r) => Number(r.score)).filter((n) => !Number.isNaN(n))
+  if (scores.length === 0) return 0
+
+  const total = scores.reduce((sum, n) => sum + n, 0)
+  return Number((total / scores.length).toFixed(2))
+}
+
+export const updateRiderAverage = async (riderId, avgRating) => {
+  const { data, error } = await supabase
+    .from('riders')
+    .update({ avg_rating: avgRating })
+    .eq('id', riderId)
+    .select('id, avg_rating')
+    .single()
+
+  if (error) throw error
+  return data
+}
