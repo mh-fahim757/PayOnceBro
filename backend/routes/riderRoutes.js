@@ -2,7 +2,7 @@
 // URL → Controller mapping for rider endpoints
 
 import { Router } from 'express'
-import { updateLocation, getLocation, getProfile, getAssignments, getEarnings } from '../controllers/riderController.js'
+import { updateLocation, getLocation, getProfile, getAssignments, getEarnings, getRoute, setLocationForTesting } from '../controllers/riderController.js'
 import { protect } from '../middleware/authMiddleware.js'
 import { restrictTo } from '../middleware/roleMiddleware.js'
 
@@ -19,12 +19,19 @@ router.use(protect)
 router.get('/profile/me', restrictTo('rider'), getProfile)
 router.get('/assignments', restrictTo('rider'), getAssignments)
 router.get('/earnings', restrictTo('rider'), getEarnings)
+router.get('/route/:clusterId', restrictTo('rider'), getRoute)
 
 /**
  * PUT /api/rider/location
  * Update rider's current GPS coordinates (called every 30s)
  */
 router.put('/location', restrictTo('rider'), updateLocation)
+
+/**
+ * POST /api/rider/testlocation (DEVELOPMENT ONLY)
+ * Manually set rider location for testing without geolocation
+ */
+router.post('/testlocation', restrictTo('rider'), setLocationForTesting)
 
 /**
  * GET /api/rider/:id/location

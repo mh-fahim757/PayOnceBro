@@ -3,6 +3,10 @@
 
 import * as riderModel from '../models/riderModel.js'
 import * as orderModel from '../models/orderModel.js'
+import { optimizeRoute } from '../services/routeService.js'
+import * as clusterModel from '../models/clusterModel.js'
+import * as restaurantModel from '../models/restaurantModel.js'
+import supabase from '../config/db.js'
 
 /**
  * updateLocation — rider sends their current GPS coordinates every 30 seconds.
@@ -162,6 +166,10 @@ export const getEarnings = async (req, res, next) => {
         totalDeliveries: 0,
         todayEarnings: 0,
         todayDeliveries: 0,
+        weeklyEarnings: 0,
+        weeklyDeliveries: 0,
+        monthlyEarnings: 0,
+        monthlyDeliveries: 0,
       })
     }
 
@@ -171,6 +179,14 @@ export const getEarnings = async (req, res, next) => {
     const todayM = now.getMonth()
     const todayD = now.getDate()
 
+    // Calculate start of this week (Monday)
+    const startOfWeek = new Date(now)
+    startOfWeek.setDate(now.getDate() - now.getDay() + 1)
+    startOfWeek.setHours(0, 0, 0, 0)
+
+    // Calculate start of this month
+    const startOfMonth = new Date(todayY, todayM, 1)
+
     const totals = deliveredOrders.reduce(
       (acc, order) => {
         const deliveryFee = Number(order.delivery_fee) || 0
@@ -178,6 +194,8 @@ export const getEarnings = async (req, res, next) => {
         acc.totalDeliveries += 1
 
         const deliveredAt = order.delivered_at ? new Date(order.delivered_at) : null
+        
+        // Today
         if (
           deliveredAt &&
           deliveredAt.getFullYear() === todayY &&
@@ -188,9 +206,34 @@ export const getEarnings = async (req, res, next) => {
           acc.todayDeliveries += 1
         }
 
+        // This week (Monday to now)
+        if (deliveredAt && deliveredAt >= startOfWeek && deliveredAt <= now) {
+          acc.weeklyEarnings += deliveryFee
+          acc.weeklyDeliveries += 1
+        }
+
+        // This month
+        if (
+          deliveredAt &&
+          deliveredAt.getFullYear() === todayY &&
+          deliveredAt.getMonth() === todayM
+        ) {
+          acc.monthlyEarnings += deliveryFee
+          acc.monthlyDeliveries += 1
+        }
+
         return acc
       },
-      { totalEarnings: 0, totalDeliveries: 0, todayEarnings: 0, todayDeliveries: 0 }
+      {
+        totalEarnings: 0,
+        totalDeliveries: 0,
+        todayEarnings: 0,
+        todayDeliveries: 0,
+        weeklyEarnings: 0,
+        weeklyDeliveries: 0,
+        monthlyEarnings: 0,
+        monthlyDeliveries: 0,
+      }
     )
 
     res.json({
@@ -198,7 +241,121 @@ export const getEarnings = async (req, res, next) => {
       totalDeliveries: totals.totalDeliveries,
       todayEarnings: Number(totals.todayEarnings.toFixed(2)),
       todayDeliveries: totals.todayDeliveries,
+      weeklyEarnings: Number(totals.weeklyEarnings.toFixed(2)),
+      weeklyDeliveries: totals.weeklyDeliveries,
+      monthlyEarnings: Number(totals.monthlyEarnings.toFixed(2)),
+      monthlyDeliveries: totals.monthlyDeliveries,
+      rating: rider.avg_rating || 0,
     })
+  } catch (error) {
+    next(error)
+  }
+}
+
+/**
+ * getRoute — Optimized pickup route for a cluster assignment
+ *
+ * Request:  GET /api/rider/route/:clusterId
+ * Auth:     JWT (rider)
+ * Params:   clusterId
+ * Response: { orderedStops, mapsUrl, totalDistance }
+ */
+export const getRoute = async (req, res, next) => {
+  try {
+    const { clusterId } = req.params
+    const riderId = req.user.id
+
+    // Get rider's current location
+    const rider = await riderModel.getByUserId(riderId)
+    if (!rider) {
+      return res.status(404).json({ message: 'Rider not found' })
+    }
+
+    const riderLocation = {
+      lat: rider.current_lat,
+      lng: rider.current_lng,
+    }
+
+    // Get cluster details
+    const { data: cluster } = await supabase
+      .from('clusters')
+      .select('restaurant_ids, id')
+      .eq('id', clusterId)
+      .single()
+
+    if (!cluster) {
+      return res.status(404).json({ message: 'Cluster not found' })
+    }
+
+    // Get restaurants in the cluster
+    const restaurantIds = cluster.restaurant_ids || []
+    const restaurants = await restaurantModel.getByIds(restaurantIds)
+
+    // Get customer order and address
+    const { data: order } = await supabase
+      .from('orders')
+      .select('id, user_lat, user_lng, cluster_id')
+      .eq('cluster_id', clusterId)
+      .limit(1)
+      .single()
+
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found for cluster' })
+    }
+
+    // Build stops array: restaurants + customer
+    const stops = [
+      ...restaurants.map((r) => ({
+        id: r.id,
+        name: r.name,
+        type: 'restaurant',
+        lat: r.lat,
+        lng: r.lng,
+      })),
+      {
+        id: 'customer',
+        name: 'Customer Delivery Location',
+        type: 'customer',
+        lat: order.user_lat,
+        lng: order.user_lng,
+      },
+    ]
+
+    // Optimize route
+    const routeData = optimizeRoute(stops, riderLocation)
+
+    res.json(routeData)
+  } catch (error) {
+    next(error)
+  }
+}
+
+/**
+ * setLocationForTesting — DEVELOPMENT ONLY
+ * Manually set a rider's location for testing without geolocation.
+ * 
+ * Request:  POST /api/rider/testlocation
+ * Auth:     JWT (rider)
+ * Body:     { lat, lng }
+ * Response: { success, location }
+ */
+export const setLocationForTesting = async (req, res, next) => {
+  try {
+    const { lat, lng } = req.body
+    const userId = req.user.id
+
+    if (typeof lat !== 'number' || typeof lng !== 'number') {
+      return res.status(400).json({ message: 'lat and lng must be numbers' })
+    }
+
+    const location = await riderModel.updateLocationByUserId(userId, lat, lng)
+    
+    if (!location) {
+      return res.status(404).json({ message: 'Rider not found' })
+    }
+
+    console.log(`✅ [TEST] Rider ${userId} location set to lat=${lat}, lng=${lng}`)
+    res.json({ success: true, location })
   } catch (error) {
     next(error)
   }

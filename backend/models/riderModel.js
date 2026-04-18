@@ -172,3 +172,19 @@ export const updateStats = async (riderId, totalDeliveries) => {
   if (error) throw error
   return data
 }
+
+/**
+ * updateRating — update rider's average rating after a new rating is submitted.
+ * Called by ratingController after creating a new rider rating.
+ */
+export const updateRating = async (riderId, avgRating) => {
+  const { data, error } = await supabase
+    .from('riders')
+    .update({ avg_rating: avgRating })
+    .eq('id', riderId)
+    .select('id, avg_rating')
+    .single()
+
+  if (error) throw error
+  return data
+}

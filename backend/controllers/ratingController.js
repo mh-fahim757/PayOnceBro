@@ -1,5 +1,6 @@
 import * as restaurantModel from '../models/restaurantModel.js'
 import * as ratingModel from '../models/ratingModel.js'
+import * as riderModel from '../models/riderModel.js'
 
 export const createRestaurantRating = async (req, res, next) => {
   try {
@@ -139,6 +140,58 @@ export const addResponse = async (req, res, next) => {
     }
 
     res.json({ rating: updated })
+  } catch (err) {
+    next(err)
+  }
+}
+
+// Rider Rating Methods
+
+export const createRiderRating = async (req, res, next) => {
+  try {
+    const { orderId, riderId, score, reviewText } = req.body
+
+    if (!orderId || !riderId || score == null) {
+      return res.status(400).json({ message: 'orderId, riderId and score are required' })
+    }
+
+    const parsedScore = Number(score)
+    if (!Number.isInteger(parsedScore) || parsedScore < 1 || parsedScore > 5) {
+      return res.status(400).json({ message: 'score must be an integer between 1 and 5' })
+    }
+
+    // Verify order is delivered and belongs to user
+    const deliveredOrder = await ratingModel.getDeliveredOrderForUser(orderId, req.user.id)
+    if (!deliveredOrder) {
+      return res.status(400).json({ message: 'You can only rate delivered orders that belong to you' })
+    }
+
+    // Check if user already rated this rider for this order
+    const existing = await ratingModel.findExistingRiderRating(orderId, req.user.id, riderId)
+    if (existing) {
+      return res.status(409).json({ message: 'You already rated this rider for this order' })
+    }
+
+    // Create rating
+    const rating = await ratingModel.createRiderRating({
+      orderId,
+      userId: req.user.id,
+      riderId,
+      score: parsedScore,
+      reviewText: reviewText?.trim() || null,
+    })
+
+    // Calculate and update rider's average rating
+    const avg = await ratingModel.calculateRiderAverage(riderId)
+    await riderModel.updateRating(riderId, avg)
+
+    // Log low rating alert
+    if (avg < 3.0) {
+      const rider = await riderModel.getById(riderId)
+      console.warn(`⚠️ Rider ${riderId} (user: ${rider?.user_id}) average rating dropped to ${avg.toFixed(1)} stars`)
+    }
+
+    res.status(201).json({ rating })
   } catch (err) {
     next(err)
   }

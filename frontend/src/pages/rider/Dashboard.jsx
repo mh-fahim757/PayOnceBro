@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import StatusButtons from '../../components/rider/StatusButtons.jsx'
 import { getProfile, getAssignments, getEarnings } from '../../services/riderService.js'
 import { toast } from 'sonner'
 
 const Dashboard = () => {
+  const navigate = useNavigate()
   const [assignments, setAssignments] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -146,6 +148,28 @@ const Dashboard = () => {
                   <p style={{ fontSize: '14px', color: '#666' }}>
                     Items: <span style={{ fontWeight: 'bold' }}>{order.itemCount || 0}</span>
                   </p>
+                </div>
+
+                {/* View Route and Status Update Buttons */}
+                <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+                  {order.cluster_id && (
+                    <button
+                      onClick={() => navigate(`/rider/route?clusterId=${order.cluster_id}`)}
+                      style={{
+                        flex: 1,
+                        padding: '8px 12px',
+                        background: '#3b82f6',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                        fontWeight: '500'
+                      }}
+                    >
+                      🗺️ View Route
+                    </button>
+                  )}
                 </div>
 
                 {/* Status Update Buttons */}

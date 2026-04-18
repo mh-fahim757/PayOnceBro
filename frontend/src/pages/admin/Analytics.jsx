@@ -17,6 +17,8 @@ const formatMoney = (value) => {
   }).format(amount)
 }
 
+const formatRating = (value) => Number(value || 0).toFixed(1)
+
 const Analytics = () => {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -128,6 +130,34 @@ const Analytics = () => {
           helper={data?.mostOrderedItem ? `${formatCount(data.mostOrderedItem.count)} orders` : 'No orders yet'}
         />
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Low Rated Riders (Below 3.0)</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {(data?.lowRatedRiders || []).length === 0 ? (
+            <p className="text-sm text-muted-foreground">No riders are currently below 3.0 rating.</p>
+          ) : (
+            <div className="space-y-2">
+              {(data?.lowRatedRiders || []).map((rider) => (
+                <div
+                  key={rider.id}
+                  className="flex items-center justify-between rounded-md border px-3 py-2"
+                >
+                  <div>
+                    <p className="text-sm font-medium">{rider.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Rider ID: {String(rider.userId || '').slice(0, 8) || 'N/A'} | Deliveries: {formatCount(rider.totalDeliveries)} | Status: {rider.isAvailable ? 'Available' : 'On Delivery'}
+                    </p>
+                  </div>
+                  <span className="text-sm font-semibold text-red-600">{formatRating(rider.avgRating)} / 5</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <RevenueChart data={weeklyRevenue} />
     </section>
