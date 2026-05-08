@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import dotenv from 'dotenv'
 
-dotenv.config()
+dotenv.config({ path: new URL('../../.env', import.meta.url) })
 
 if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
   console.warn('⚠️  Warning: SUPABASE_SERVICE_ROLE_KEY is missing from .env. Backend will use ANON_KEY, which may cause RLS errors during profile syncing.')

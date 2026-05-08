@@ -1,7 +1,7 @@
 import dotenv from 'dotenv'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 
-dotenv.config()
+dotenv.config({ path: new URL('../../.env', import.meta.url) })
 
 const apiKey = process.env.GEMINI_API_KEY
 
